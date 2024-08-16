@@ -69,6 +69,74 @@ std::deque<String> chatHistory;
 #endif
 #endif
 
+
+// --------------------         2024-08-16
+// LEDの ON/OFF スイッチ
+#define USE_LED                 // ｽﾀｯｸﾁｬﾝでLEDを利用する場合はコメントアウト (内蔵LED、NECOMIMI_LEDのどちらか片方だけ使う場合にもコメントアウト必須)
+#define USE_INTERNAL_LED        // 内蔵LEDを使う場合はコメントアウト
+#define USE_NECOMIMI_LED        // NECOMIMI_LEDを使う場合はコメントアウト
+// #define USE_MEMCHECK            // ヒープメモリの監視を行う場合はコメントアウト
+
+
+// --------------------         2024-08-16
+// LED関連ライブラリの読み込み
+#ifdef USE_LED
+  #include <esp_task_wdt.h>     // ウォッチドッグタイマーのチェック
+  #include <esp_heap_caps.h>    // メモリ監視 2024-08-16
+  #define FASTLED_ALLOW_INTERRUPTS 0
+  #include <FastLED.h>          // FastLED ライブラリ
+  #include "NeoPixelEffects.h"  // LEDエフェクト ライブラリ
+
+// --------------------         2024-08-16
+// 内蔵LEDの初期エフェクト(レインボー)
+#ifdef USE_INTERNAL_LED
+
+  #define INTERNAL_PIN 25
+  #define INTERNAL_LEDS 10
+
+  int current_INT_EffectIndex = 0;
+  CRGB internal_leds[INTERNAL_LEDS];
+ 
+  NeoPixelEffects effects01 = NeoPixelEffects(
+    internal_leds,
+    RAINBOWWAVE,    // エフェクトの種類      effect
+    0,              // エフェクト開始位置    pixstart
+    9,              // エフェクト終了位置    pixend
+    3,              // 点灯範囲 (COMET等)    aoe
+    75,             // エフェクトの間隔      delay_ms
+    CRGB::Green,    // 色 (FastLED 指定色)   color_crgb
+    true,           // ループするかどうか？  looping
+    FORWARD         // エフェクトの方向      direction
+  );
+#endif
+
+// --------------------         2024-08-16
+// NECOMIMI_LEDの初期エフェクト(レインボー)
+
+#ifdef USE_NECOMIMI_LED
+
+  #define PORT_B_PIN 26
+  #define PORT_B_LEDS 18      // LED弾数と仕様により可変させてください
+
+  int current_NECO_EffectIndex = 0;
+  CRGB pb_leds[PORT_B_LEDS];
+
+  NeoPixelEffects effects02 = NeoPixelEffects(
+    pb_leds,
+    RAINBOWWAVE,    // エフェクトの種類      effect
+    0,              // エフェクト開始位置    pixstart
+    17,             // エフェクト終了位置    pixend
+    5,              // 点灯範囲 (COMET等)    aoe
+    75,             // エフェクトの間隔      delay_ms
+    CRGB::Green,    // 色 (FastLED 指定色)   color_crgb
+    true,           // ループするかどうか？  looping
+    FORWARD         // エフェクトの方向      direction
+  );
+#endif
+
+#endif
+
+
 /// set M5Speaker virtual channel (0-7)
 static constexpr uint8_t m5spk_virtual_channel = 0;
 
@@ -224,6 +292,130 @@ bool init_chat_doc(const char *data)
     return true;
 }
 
+
+// --------------------         2024-08-16
+// AIｽﾀｯｸﾁｬﾝ2で利用するエフェクトの種類 (現在は11種を用意 ※最後は消灯)
+#ifdef USE_LED
+void setEffectParameters(int effectIndex, NeoPixelEffects &effects, CRGB* leds, int numLeds) {
+    // 前のエフェクトをクリア
+    effects.stop();
+    FastLED.clear();
+
+    switch (effectIndex) {
+        case 0:
+            effects.setEffect(RAINBOWWAVE);   // レインボーな流れるLED
+            effects.setParameters(75, CRGB::Green, FORWARD);
+            break;
+        case 1:
+            effects.setEffect(COMET);         // 流れ星エフェクト
+            effects.setParameters(75, CRGB::PaleVioletRed, FORWARD);
+            effects.setRepeat(true);
+            break;
+        case 2:
+            effects.setEffect(LARSON);        // 端まで流れて戻ってくるナイトライダー系エフェクト
+            effects.setParameters(75, CRGB::Red, FORWARD);
+            break;
+        case 3:
+            effects.setEffect(CHASE);         // LEDを1弾飛ばしで交互に光らせる工事現場系エフェクト
+            effects.setParameters(120, CRGB::Blue, FORWARD);
+            break;
+        case 4:
+            effects.setEffect(STATIC);        // 同色がチラチラ点滅するキラキラ系エフェクト
+            effects.setParameters(100, CRGB::Orange, FORWARD);
+            break;
+        case 5:
+            effects.setEffect(STROBE);        // ストロボエフェクト (定期的に全LEDピカピカ)
+            effects.setParameters(100, CRGB::OrangeRed, FORWARD);
+            break;
+        case 6:
+            effects.setEffect(SINEWAVE);      // 指定したLED弾数だけ消灯しながら流れるエフェクト (COMETの逆イメージ)
+            effects.setParameters(20, CRGB::Green, FORWARD);
+            break;
+        case 7:
+            effects.setEffect(RANDOM);        // LED全弾がランダムに全色点灯 (パリピエフェクト)
+            effects.setParameters(70, CRGB::Yellow, FORWARD);
+            break;
+        case 8:
+            effects.setEffect(FADEINOUT);     // フェードイン、フェードアウト点灯を繰り返すエフェクト (PULSEと同一)
+            effects.setParameters(20, CRGB::LightGoldenrodYellow, FORWARD);
+            break;
+        case 9:
+            effects.setEffect(NANAIRO);       // FADEINOUTエフェクトを1回ずつ色変えするエフェクト (七色に順番点灯)
+            effects.setParameters(20, CRGB::Green, FORWARD);
+            break;
+        case 10:
+            effects.setEffect(MERAMERA);      // LED全弾が暖色でメラメラと変化するエフェクト
+            effects.setParameters(70, CRGB::Red, FORWARD);
+            break;
+        case 11:
+            effects.setEffect(NONE);          // LED消灯
+            effects.setParameters(10, CRGB::Red, FORWARD);
+            break;
+        default:
+            break;
+    }
+}
+#endif
+
+
+// --------------------         2024-08-16
+// 内蔵LEDエフェクトを更新する関数
+#ifdef USE_INTERNAL_LED
+void updateInternalLedEffect() {
+        effects01.update();               // エフェクトを適用
+        FastLED.show();                   // LEDの状態を更新
+        esp_task_wdt_reset();             // WDTリセットをここで実行
+}
+// 内蔵LEDエフェクトを切り替えるタスク
+void internalLedEffectTask(void *pvParameters) {
+  while (true) {
+    updateInternalLedEffect();
+    vTaskDelay(50 / portTICK_PERIOD_MS);  // エフェクト更新の遅延
+  }
+}
+#endif
+
+// --------------------         2024-08-16
+// NECOMIMI LEDエフェクトを更新する関数
+#ifdef USE_NECOMIMI_LED
+void updateNecomimiLedEffect() {
+        effects02.update();               // エフェクトを適用
+        FastLED.show();                   // LEDの状態を更新
+        esp_task_wdt_reset();             // WDTリセットをここで実行
+}
+// NECOMIMI LEDエフェクトを切り替えるタスク
+void necomimiLedEffectTask(void *pvParameters) {
+  while (true) {
+    updateNecomimiLedEffect();
+    vTaskDelay(50 / portTICK_PERIOD_MS);  // エフェクト更新の遅延
+  }
+}
+#endif
+
+
+// --------------------         2024-08-16
+// メモリ監視関数
+#ifdef USE_MEMCHECK
+void monitorHeap() {
+    Serial.print("Free heap Memory [byte]:  ");
+    Serial.println(ESP.getFreeHeap());                                  // 現在のフリーヒープサイズ
+    Serial.print("Largest free block     : ");
+    Serial.println(heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));  // 最大連続ブロックサイズ
+    Serial.print("Total free blocks      : ");
+    Serial.println(heap_caps_get_free_size(MALLOC_CAP_8BIT));           // 合計フリーヒープサイズ
+    Serial.println("================================");
+}
+
+// メモリ監視タスク
+void heapMonitorTask(void *pvParameters) {
+    while (true) {
+        monitorHeap();
+        vTaskDelay(5000 / portTICK_PERIOD_MS);  // 5秒ごとに監視
+    }
+}
+#endif
+
+
 void handleRoot() {
   server.send(200, "text/html", "<html><head><meta charset=\"UTF-8\"/></head><body><pre>hello from m5stack!\n&boxdr;&boxh;&boxh;&boxh;&boxdl;\n&boxv;&#729;_&#729;&boxv;\n&boxur;&boxh;&boxh;&boxh;&boxul;</pre></body></html>");
 }
@@ -259,51 +451,57 @@ void handle_speech() {
   server.send(200, "text/plain", String("OK"));
 }
 
+
+// --------------------         2024-08-16
+// HTTPSをポストするタスク (SSL証明書) ※メモリ(Free heap)が少なくなると失敗する
 String https_post_json(const char* url, const char* json_string, const char* root_ca) {
   String payload = "";
-  WiFiClientSecure *client = new WiFiClientSecure;
-  if(client) {
-    client -> setCACert(root_ca);
-    {
-      // Add a scoping block for HTTPClient https to make sure it is destroyed before WiFiClientSecure *client is 
-      HTTPClient https;
-      https.setTimeout( 65000 ); 
+
+  // WiFiClientSecureをstd::unique_ptrで管理
+  std::unique_ptr<WiFiClientSecure> client(new WiFiClientSecure());
   
-      Serial.print("[HTTPS] begin...\n");
-      if (https.begin(*client, url)) {  // HTTPS
-        Serial.print("[HTTPS] POST...\n");
-        // start connection and send HTTP header
-        https.addHeader("Content-Type", "application/json");
-        https.addHeader("Authorization", String("Bearer ") + OPENAI_API_KEY);
-        int httpCode = https.POST((uint8_t *)json_string, strlen(json_string));
-  
-        // httpCode will be negative on error
-        if (httpCode > 0) {
-          // HTTP header has been send and Server response header has been handled
-          Serial.printf("[HTTPS] POST... code: %d\n", httpCode);
-  
-          // file found at server
-          if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
-            payload = https.getString();
-            Serial.println("//////////////");
-            Serial.println(payload);
-            Serial.println("//////////////");
-          }
-        } else {
-          Serial.printf("[HTTPS] POST... failed, error: %s\n", https.errorToString(httpCode).c_str());
-        }  
-        https.end();
+  if (client) {
+    client->setCACert(root_ca);
+    
+    // Add a scoping block for HTTPClient https to make sure it is destroyed before WiFiClientSecure *client is 
+    // HTTPClientもstd::unique_ptrで管理
+    std::unique_ptr<HTTPClient> https(new HTTPClient());
+    https->setTimeout(65000);
+
+    Serial.print("[HTTPS] begin...\n");
+    if (https->begin(*client, url)) {  // HTTPS
+      Serial.print("[HTTPS] POST...\n");
+      // HTTPヘッダの設定   // start connection and send HTTP header
+      https->addHeader("Content-Type", "application/json");
+      https->addHeader("Authorization", String("Bearer ") + OPENAI_API_KEY);
+      int httpCode = https->POST((uint8_t *)json_string, strlen(json_string));
+
+      // httpCode will be negative on error
+      if (httpCode > 0) {
+        // HTTP header has been send and Server response header has been handled
+        Serial.printf("[HTTPS] POST... code: %d\n", httpCode);
+
+        // file found at server
+        if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
+          payload = https->getString();
+          Serial.println("//////////////");
+          Serial.println(payload);
+          Serial.println("//////////////");
+        }
       } else {
-        Serial.printf("[HTTPS] Unable to connect\n");
+        Serial.printf("[HTTPS] POST... failed, error: %s\n", https->errorToString(httpCode).c_str());
       }
-      // End extra scoping block
-    }  
-    delete client;
+      https->end();
+    } else {
+      Serial.printf("[HTTPS] Unable to connect\n");
+    }
+    // End extra scoping block
   } else {
     Serial.println("Unable to create client");
   }
   return payload;
 }
+
 
 String chatGpt(String json_string) {
   String response = "";;
@@ -777,6 +975,74 @@ static box_t box_stt;
 static box_t box_BtnA;
 static box_t box_BtnC;
 
+
+// --------------------     2024-08-16
+// AIｽﾀｯｸﾁｬﾝ2の顔タッチ(左側)で内蔵LEDエフェクトを可変させるタッチイベント関連タスク
+#ifdef USE_INTERNAL_LED
+
+static box_t box_led_L;
+// タッチイベントを処理するタスク
+void touchEventTask_L(void *pvParameters) {
+  while (true) {
+    M5.update();  // M5の状態を更新
+
+    if (M5.Touch.getCount() > 0) { // タッチが検知された場合
+      auto t = M5.Touch.getDetail(); // タッチ情報を取得
+      Serial.printf("Touch detected at L (%d, %d)\n", t.x, t.y);
+
+      if (box_led_L.contain(t.x, t.y)) { // 内蔵LEDのボックスがタッチされた場合
+
+          // エフェクトインデックスを更新
+          current_INT_EffectIndex = (current_INT_EffectIndex + 1) % 12; // 0から11までのインデックスをループ
+          setEffectParameters(current_INT_EffectIndex, effects01, internal_leds, INTERNAL_LEDS);
+          M5.Speaker.tone(700, 100); // タッチ音の再生          
+          
+      	  Serial.printf("Internal LED effect changed to index: %d\n", current_INT_EffectIndex);
+
+          vTaskDelay(300 / portTICK_PERIOD_MS); // タッチの連続入力を防ぐ
+          continue; // ループの先頭に戻る
+      }
+    }
+
+    vTaskDelay(100 / portTICK_PERIOD_MS); // タッチイベントのポーリング頻度を調整
+  }
+}
+#endif
+
+// --------------------     2024-08-16
+// AIｽﾀｯｸﾁｬﾝ2の顔タッチ(右側)でNECOMIMI LEDエフェクトを可変させるタッチイベント関連タスク
+#ifdef USE_NECOMIMI_LED
+
+static box_t box_led_R;
+// タッチイベントを処理するタスク
+void touchEventTask_R(void *pvParameters) {
+  while (true) {
+    M5.update();  // M5の状態を更新
+
+    if (M5.Touch.getCount() > 0) { // タッチが検知された場合
+      auto t = M5.Touch.getDetail(); // タッチ情報を取得
+      Serial.printf("Touch detected at R (%d, %d)\n", t.x, t.y);
+
+      if (box_led_R.contain(t.x, t.y)) { // NECOMIMI LEDのボックスがタッチされた場合
+
+          // エフェクトインデックスを更新
+          current_NECO_EffectIndex = (current_NECO_EffectIndex + 1) % 12; // 0から11までのインデックスをループ
+          setEffectParameters(current_NECO_EffectIndex, effects02, pb_leds, PORT_B_LEDS);
+          M5.Speaker.tone(700, 100); // タッチ音の再生
+		  
+      	  Serial.printf("Necomimi LED effect changed to index: %d\n", current_NECO_EffectIndex);
+
+          vTaskDelay(300 / portTICK_PERIOD_MS); // タッチの連続入力を防ぐ
+          continue; // ループの先頭に戻る
+      }
+    }
+
+    vTaskDelay(100 / portTICK_PERIOD_MS); // タッチイベントのポーリング頻度を調整
+  }
+}
+#endif
+
+
 void Wifi_setup() {
   // 前回接続時情報で接続する
   while (WiFi.status() != WL_CONNECTED) {
@@ -856,12 +1122,13 @@ String SpeechToText(bool isGoogle){
 
 void setup()
 {
+  // Serial.begin(115200);       // デバッグ用のシリアル通信開始
   auto cfg = M5.config();
 
   cfg.external_spk = true;    /// use external speaker (SPK HAT / ATOMIC SPK)
-//cfg.external_spk_detail.omit_atomic_spk = true; // exclude ATOMIC SPK
-//cfg.external_spk_detail.omit_spk_hat    = true; // exclude SPK HAT
-//  cfg.output_power = true;
+  // cfg.external_spk_detail.omit_atomic_spk = true; // exclude ATOMIC SPK
+  // cfg.external_spk_detail.omit_spk_hat    = true; // exclude SPK HAT
+  // cfg.output_power = true;
   M5.begin(cfg);
 
   preallocateBuffer = (uint8_t *)malloc(preallocateBufferSize);
@@ -880,11 +1147,82 @@ void setup()
   { /// custom setting
     auto spk_cfg = M5.Speaker.config();
     /// Increasing the sample_rate will improve the sound quality instead of increasing the CPU load.
-    spk_cfg.sample_rate = 96000; // default:64000 (64kHz)  e.g. 48000 , 50000 , 80000 , 96000 , 100000 , 128000 , 144000 , 192000 , 200000
+    // 音声は96 → 64KHzに変更 2024-08-16
+    spk_cfg.sample_rate = 64000; // default:64000 (64kHz)  e.g. 48000 , 50000 , 80000 , 96000 , 100000 , 128000 , 144000 , 192000 , 200000
     spk_cfg.task_pinned_core = APP_CPU_NUM;
     M5.Speaker.config(spk_cfg);
   }
 //  M5.Speaker.begin();
+
+
+// --------------------			2024-08-16
+// LEDエフェクトをマルチタスクで実行する
+#ifdef USE_LED
+
+#ifdef USE_INTERNAL_LED
+  FastLED.setBrightness(30);
+  FastLED.addLeds<NEOPIXEL, INTERNAL_PIN>(internal_leds, INTERNAL_LEDS);
+
+  // 起動時に初期エフェクトを設定
+  setEffectParameters(current_INT_EffectIndex, effects01, internal_leds, INTERNAL_LEDS);
+  FastLED.show(); // 初期状態のLEDを反映
+
+  // 内蔵LEDエフェクトタスクをコア1に作成
+  xTaskCreatePinnedToCore(
+    internalLedEffectTask,      // タスク関数
+    "Internal LED Effect Task", // タスク名
+    1536,                       // スタックサイズ
+    NULL,                       // 引数
+    2,                          // 優先度
+    NULL,                       // タスクハンドル
+    1                           // コアID（0または1）
+  );
+  
+  // タッチイベントタスク(右側)をコア0に作成
+  xTaskCreatePinnedToCore(
+    touchEventTask_L,           // タスク関数
+    "Touch Event Task L",       // タスク名
+    3072,                       // スタックサイズ
+    NULL,                       // 引数
+    2,                          // 優先度
+    NULL,                       // タスクハンドル
+    1                           // コアID（0または1）
+  ); 
+#endif
+
+#ifdef USE_NECOMIMI_LED
+  FastLED.setBrightness(30);
+  FastLED.addLeds<NEOPIXEL, PORT_B_PIN>(pb_leds, PORT_B_LEDS);
+
+  // 起動時に初期エフェクトを設定
+  setEffectParameters(current_NECO_EffectIndex, effects02, pb_leds, PORT_B_LEDS);
+  FastLED.show(); // 初期状態のLEDを反映
+
+  // NECOMIMI LEDエフェクトタスクをコア1に作成
+  xTaskCreatePinnedToCore(
+    necomimiLedEffectTask,      // タスク関数
+    "Necomimi LED Effect Task", // タスク名
+    1536,                       // スタックサイズ
+    NULL,                       // 引数
+    2,                          // 優先度
+    NULL,                       // タスクハンドル
+    1                           // コアID（0または1）
+  );
+
+  // タッチイベントタスクをコア0に作成
+  xTaskCreatePinnedToCore(
+    touchEventTask_R,           // タスク関数
+    "Touch Event Task R",       // タスク名
+    3072,                       // スタックサイズ
+    NULL,                       // 引数
+    2,                          // 優先度
+    NULL,                       // タスクハンドル
+    1                           // コアID（0または1）
+  ); 
+#endif
+
+#endif
+
 
   Servo_setup();
   delay(1000);
@@ -1117,13 +1455,43 @@ void setup()
   avatar.setSpeechFont(&fonts::efontJA_16);
 
 //  M5.Speaker.setVolume(200);
-  box_servo.setupBox(80, 120, 80, 80);
-  box_stt.setupBox(0, 0, M5.Display.width(), 60);
-  box_BtnA.setupBox(0, 100, 40, 60);
-  box_BtnC.setupBox(280, 100, 40, 60);
+
+
+// --------------------         2024-08-16
+// AIｽﾀｯｸﾁｬﾝ2の顔タッチの座標情報
+
+  box_stt.setupBox(0, 0, M5.Display.width(), 60);   
+  box_servo.setupBox(107, 80, 106, 60);
+  box_BtnA.setupBox(0, 80, 60, 60);                 // 座標修正 2024-08-16 ※初期値より大きさ修正
+  box_BtnC.setupBox(260, 80, 60, 60);               // 座標修正 2024-08-16 ※初期値より大きさ修正
+
+#ifdef USE_INTERNAL_LED
+  box_led_L.setupBox(0, 160, 150, 80);              // LEDタッチ座標定義 (左下) 2024-08-16 ※中央スペース有 (20px)
+#endif
+#ifdef USE_NECOMIMI_LED
+  box_led_R.setupBox(170, 160, 150, 80);            // LEDタッチ座標定義 (右下) 2024-08-16 ※中央スペース有 (20px)
+#endif
+
+#ifdef USE_MEMCHECK
+// --------------------         2024-08-16
+// メモリ監視タスクを起動
+  xTaskCreate(
+	  heapMonitorTask, 		  // タスク関数
+	  "Heap Monitor Task", 	// タスク名
+	  2048, 					      // スタックサイズ
+	  NULL, 					      // 引数
+	  1, 						        // 優先度
+	  NULL					        // タスクハンドル
+  );
+#endif
+
+
 }
 
-String random_words[18] = {"あなたは誰","楽しい","怒った","可愛い","悲しい","眠い","ジョークを言って","泣きたい","怒ったぞ","こんにちは","お疲れ様","詩を書いて","疲れた","お腹空いた","嫌いだ","苦しい","俳句を作って","歌をうたって"};
+
+// --------------------         2024-08-16
+// 『お腹空いた』だとChatGPTは【あいた】と回答してしまう為、わざとひらがなにて【すいた】に変更しました。
+String random_words[18] = {"あなたは誰","楽しい","怒った","可愛い","悲しい","眠い","ジョークを言って","泣きたい","怒ったぞ","こんにちは","お疲れ様","詩を書いて","疲れた","お腹がすいた","嫌いだ","苦しい","俳句を作って","歌をうたって"};
 int random_time = -1;
 bool random_speak = true;
 static int lastms1 = 0;
@@ -1207,6 +1575,7 @@ void SST_ChatGPT() {
           avatar.setExpression(Expression::Neutral);
         } 
 }
+
 
 void loop()
 {
@@ -1348,4 +1717,3 @@ void loop()
     }
   }
 }
- 
