@@ -6,9 +6,9 @@
 String LANG_CODE = "ja-jp";
 
 namespace {
-constexpr char* API_HOST = "speech.googleapis.com";
+constexpr const char* API_HOST = "speech.googleapis.com";
 constexpr int API_PORT = 443;
-constexpr char* API_PATH = "/v1/speech:recognize";
+constexpr const char* API_PATH = "/v1/speech:recognize";
 }  // namespace
 
 //CloudSpeechClient::CloudSpeechClient(Authentication authentication) {

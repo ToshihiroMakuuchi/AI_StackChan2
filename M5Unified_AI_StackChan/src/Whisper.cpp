@@ -2,9 +2,9 @@
 #include "Whisper.h"
 
 namespace {
-constexpr char* API_HOST = "api.openai.com";
+constexpr const char* API_HOST = "api.openai.com";
 constexpr int API_PORT = 443;
-constexpr char* API_PATH = "/v1/audio/transcriptions";
+constexpr const char* API_PATH = "/v1/audio/transcriptions";
 }  // namespace
 
 Whisper::Whisper(const char* root_ca, const char* api_key) : client(), key(api_key) {
