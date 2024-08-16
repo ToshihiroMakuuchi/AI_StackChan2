@@ -1,5 +1,6 @@
 # AI_StackChan2 (LEDエフェクト実装版)
 
+![画像1](images/AI_Stackchan2-03.png)<br><br>
 
 ---
 ## 2024年8月16日:
