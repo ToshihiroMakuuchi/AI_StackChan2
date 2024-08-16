@@ -3,16 +3,23 @@
 ![画像1](images/AI_Stackchan2-03.png)<br><br>
 
 ---
-## 2024年8月16日:
-画面中央のサーボ ON/OFF機能、中央左側の独り言モード、中央右側のバッテリー残量おしらせボタンの大きさと配置を修正しました。<br>
+## 2024年8月16日: (初期リリース)
+画面の左下もしくは右下をタップし、LEDエフェクトを変更できるようにしたAIｽﾀｯｸﾁｬﾝ2を展開致します。タップをすると順番でLEDエフェクトが可変します。(長押しに対応)<br>
+また、画面中央のサーボ ON/OFF機能、中央左側の独り言モード、中央右側のバッテリー残量おしらせボタンの大きさと配置を最適化しました。<br>
+M5Burnerにも内蔵LEDのみ、ネコミミLEDのみ、内蔵LED＋ネコミミLEDのそれぞれに対応したファームウェアを提供しましたので、機会があればお試しください。<br>
 
 | 変更前のレイアウト              | 変更後のレイアウト              |
 | ----------------------------- | ----------------------------- |
 | ![h:800](images/AI_Stackchan2-00.png) | ![h:800](images/AI_Stackchan2-01.png) |
 
 ### エフェクト設定:
-起動時:RAINBOW ⇒ COMET ⇒ LARSON ⇒ CHASE ⇒ STATIC ⇒ STOROBE ⇒ SINEWAVE ⇒ RANDOM ⇒ FADEINOUT ⇒ NANAIRO ⇒ MERAMERA ⇒ NONE(一旦停止) ⇒ RAINBOW… <br>
-今回は、2ヶ所同時にLEDエフェクトを実施する際、AIｽﾀｯｸﾁｬﾝのChatGPT問い合わせで非常にメモリを使用するため、比較的軽い処理のものを並べています。
+起動時:RAINBOW ⇒ COMET ⇒ LARSON ⇒ CHASE ⇒ STATIC ⇒ STOROBE ⇒ SINEWAVE ⇒ RANDOM ⇒ FADEINOUT ⇒ NANAIRO ⇒ MERAMERA ⇒ NONE(一旦停止) ⇒ RAINBOW… <br><br>
+今回は、2ヶ所同時にLEDエフェクトを実施する際、AIｽﾀｯｸﾁｬﾝのChatGPT問い合わせで非常にメモリを使用するため、比較的軽い処理のものを並べています。<br>
+
+
+AIｽﾀｯｸﾁｬﾝ2は、ChatGPTへの文字列の送信、またVoicevoxからの音声再生等のやり取りで都度メモリを消費する為、内蔵LED＋ネコミミLEDの両方での使用に耐ええるようシビアにチューニングを行いました。
+しかしながら複数の同時操作による意図しない再起動が発生する可能性があります為、ご注意いただければ幸いです。(随時検証中)<br>
+
 
 ### ｽﾀｯｸﾁｬﾝの構成:
 今回外部接続で確認したLEDは、[わしし](https://x.com/washishi)さんの[わしししょっぷ](https://washishi.booth.pm/)で販売している【Nekomimi LED】を用いました。(LED数:18弾)<br>
