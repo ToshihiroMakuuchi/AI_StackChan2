@@ -1,5 +1,7 @@
-# AI_StackChan2 (LEDエフェクト版)
+# AI_StackChan2 (LEDエフェクト実装版)
 
+
+---
 ## 2024年8月16日:
 画面中央のサーボ ON/OFF機能、中央左側の独り言モード、中央右側のバッテリー残量おしらせボタンの大きさと配置を修正しました。<br>
 
@@ -7,17 +9,29 @@
 | ----------------------------- | ----------------------------- |
 | ![h:800](images/AI_Stackchan2-00.png) | ![h:800](images/AI_Stackchan2-01.png) |
 
+### エフェクト設定:
+起動時:RAINBOW ⇒ COMET ⇒ LARSON ⇒ CHASE ⇒ STATIC ⇒ STOROBE ⇒ SINEWAVE ⇒ RANDOM ⇒ FADEINOUT ⇒ NANAIRO ⇒ MERAMERA ⇒ NONE(一旦停止) ⇒ RAINBOW… <br>
+今回は、2ヶ所同時にLEDエフェクトを実施する際、AIｽﾀｯｸﾁｬﾝのChatGPT問い合わせで非常にメモリを使用するため、比較的軽い処理のものを並べています。
+
+### ｽﾀｯｸﾁｬﾝの構成:
+スイッチサイエンス等で販売しているM5Stack純正部品 RGB LED STRIP (100cm/60LED) SK6812を用いて動作確認をしています。<br>
+![h:800](images/AI_Stackchan2-02.png)<br>
+
 
 ### 使い方 ###
+* こちらは[robo8080](https://twitter.com/robo8080)さんの【AIｽﾀｯｸﾁｬﾝ2】のソースコードにFastLEDライブラリを用いたLEDエフェクトを実装したものとなります。<br>
 * このソースを用いてVSCode＋PlatformIO環境でビルドすると、M5Stack Core2 for AWS、またはM5Stack Core2にM5GoBottom2を追加し、LEDエフェクトを直ぐに確認することができます。<br>
-  (変更は下記並びに[main.cpp](https://github.com/ToshihiroMakuuchi/AI_StackChan2/blob/ToshihiroMakuuchi/LED_Effects/M5Unified_AI_StackChan/src/main.cpp)ソース内コメントをご確認ください)
+  (変更は下記並びに[main.cpp](https://github.com/ToshihiroMakuuchi/AI_StackChan2/blob/ToshihiroMakuuchi/LED_Effects/M5Unified_AI_StackChan/src/main.cpp)ソース内コメントをご確認ください)<>br
 * Core2 for AWSやM5GoBottom2のLEDバーの使用するデータピンは【25】が用いられ、またLED球は10個搭載されています。<br>
-* 今回、外部L接続LEDとしてわししさんのわししショップ【Nekomimi LED】も用いました。<br>
+* 今回外部接続で確認したLEDは、[わしし](https://x.com/washishi)さんの[わしししょっぷ](https://washishi.booth.pm/)で販売している【Nekomimi LED】を用いました。(LED数:18弾)<br>
 * ソースコードでは#defineにてLEDの有効/無効を設けていますので、必要な方は調整してビルドをお願いします。<br>
-* レベルメーター表示OFFの時、画面下部にタッチするとバルーンで曲名を表示します。<br>
 * 画面左端の中央付近にタッチすると【独り言モード】に切り替えられます。<br>
 * 画面中央にタッチすると首振りを止めます。<br>
 * 画面右端の中央付近にタッチするとバッテリーの残量をおしらせします。<br><br>
+
+
+robo8080さんが公開している現時点のソースは下記となります。<br>
+<https://github.com/robo8080/AI_StackChan2><br><br>
 
 
 ## LEDエフェクト名称および有効パラメータ (11種)
@@ -35,6 +49,78 @@
 | [NANAIRO](https://youtube.com/shorts/aiBonRR6LJo?feature=share) | N | N | N | N | N | Y | LEDがフェードインアウトするエフェクト(七色順番に点灯) |
 | [MERAMERA](https://youtube.com/shorts/TvK8jyE4r2A?feature=share) | N | N | N | N | N | N | メラメラと燃えるようなエフェクト |
 | NONE | N | N | N | N | N | N | エフェクトの停止 |
+
+
+
+# 概要
+
+[robo8080](https://twitter.com/robo8080)が開発された【AIｽﾀｯｸﾁｬﾝ2】に、FastLEDライブラリ＋NeoPixelEffectsライブラリを搭載し、簡単にLEDエフェクト機能を確認できるようにしたものです。
+
+
+# 開発環境
+- VSCode
+- PlatformIO
+
+
+# 対応機種
+
+- M5Stack Core2 / Core2 for AWS
+※他モデルはrobo8080さんも未対応となります。
+
+
+# 必要なライブラリ
+
+詳しいバージョンについては[platformio.ini](https://github.com/ToshihiroMakuuchi/AI_StackChan2/blob/ToshihiroMakuuchi/LED_Effects/M5Unified_AI_StackChan/platformio.ini)をご覧ください。
+
+- [M5Unified](https://github.com/m5stack/M5Unified)
+
+- [ESP8266Audio](https://github.com/earlephilhower/ESP8266Audio)
+
+- [M5Stack-Avatar](https://github.com/meganetaaan/m5stack-avatar)
+
+- [ServoEasing](https://github.com/ArminJo/ServoEasing)
+
+- [ESP32Servo](https://github.com/madhephaestus/ESP32Servo)
+
+- [ArduinoJson](https://github.com/bblanchon/ArduinoJson)
+
+- [ESP32WebServer](https://github.com/Pedroalbuquerque/ESP32WebServer/blob/master/src/ESP32WebServer.h)
+
+- [SimpleVox](https://github.com/MechaUma/SimpleVox)
+
+- [ESPmDNS](https://github.com/espressif/arduino-esp32/blob/master/libraries/ESPmDNS/src/ESPmDNS.h)
+
+- [FastLED](https://github.com/FastLED/FastLED)
+
+- [NeoPixelEffects](https://github.com/nolanmoore/NeoPixelEffects)<br>
+NeoPixelEffectsに関してのcppファイル、hファイルは直接src以下に保存します。
+
+
+# ビルド(コンパイル)時の注意
+
+- ~~特にPlatformIOのバージョンだけ注意すれば、問題なく利用可能かと思います。~~
+
+- ~~いくつかの警告表示に対応しました。(2024/08/16)~~
+
+
+# 設定
+SDカード等の設定方法は、こちらを参照してください。<br>
+* [AI_StackChan2_README](https://github.com/robo8080/AI_StackChan2_README/ "Title")<br>
+<br>
+
+
+# Credit
+- [meganetaaan](https://github.com/meganetaaan)
+- [lovyan03](https://github.com/lovyan03/LovyanGFX)
+- [tobozo](https://github.com/tobozo)
+- [Takao Akaki](https://github.com/mongonta0716)
+- [ToshihiroMakuuchi](https://github.com/ToshihiroMakuuchi)
+
+# LICENSE
+[MIT](LICENSE)
+
+# Author
+[robo8080](https://github.com/robo8080)
 
 
 ---
